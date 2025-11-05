@@ -1,0 +1,30 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function and its derivative
+def f(x): return (x + 3)**2
+def df(x): return 2*(x + 3)
+
+x = 2   # starting point
+lr = 0.1  # learning rate
+
+values = [x]
+for i in range(20):  # 20 iterations
+    grad = df(x)
+    x = x - lr * grad
+    values.append(x)
+    print(f"Step {i+1}: x = {round(x,4)}, f(x) = {round(f(x),4)}")
+
+print("\nMinimum found near x =", round(x,4))
+
+# Plot function and steps
+xs = np.linspace(-6, 2, 100)
+ys = f(xs)
+plt.plot(xs, ys, label='f(x) = (x+3)^2')
+plt.scatter(values, [f(v) for v in values], color='red', label='Steps')
+plt.title("Gradient Descent")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.legend()
+plt.show()
+

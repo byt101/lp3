@@ -1,0 +1,94 @@
+# Practical 2 — Email Spam Detection (for numeric word-count dataset)
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+sns.set(style='whitegrid')
+
+# 1 Load the dataset
+df = pd.read_csv("emails.csv")
+print("✅ Dataset loaded successfully")
+print("Shape:", df.shape)
+print("Columns:", df.columns[:10].tolist(), "...")
+
+# 2 Separate features (X) and labels (y)
+X = df.drop(columns=['Email No.', 'Prediction'], errors='ignore')
+y = df['Prediction']
+
+print("\nFeature matrix shape:", X.shape)
+print("Label distribution:\n", y.value_counts())
+
+# 3 Split data into training & testing
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=42, stratify=y
+)
+
+# 4 Train models
+knn = KNeighborsClassifier(n_neighbors=5)
+svm = SVC(kernel='linear', probability=True, random_state=42)
+
+knn.fit(X_train, y_train)
+svm.fit(X_train, y_train)
+
+# 5 Predictions
+pred_knn = knn.predict(X_test)
+pred_svm = svm.predict(X_test)
+
+# 6 Evaluation Function
+def evaluate_model(name, y_true, y_pred):
+    print(f"\n{name} Results:")
+    print("Accuracy:", round(accuracy_score(y_true, y_pred), 4))
+    print(classification_report(y_true, y_pred, digits=4))
+    cm = confusion_matrix(y_true, y_pred)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title(f"{name} Confusion Matrix")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.show()
+
+# 7 Evaluate both models
+evaluate_model("KNN", y_test, pred_knn)
+evaluate_model("SVM", y_test, pred_svm)
+
+# 8 Compare both accuracies
+acc_knn = accuracy_score(y_test, pred_knn)
+acc_svm = accuracy_score(y_test, pred_svm)
+print("\nModel Comparison:")
+print(f"KNN Accuracy: {acc_knn:.4f}")
+print(f"SVM Accuracy: {acc_svm:.4f}")
+
+if acc_svm > acc_knn:
+    print("🏆 SVM performs better overall.")
+else:
+    print("🏆 KNN performs better overall.")
+
+from sklearn.metrics import roc_curve, roc_auc_score
+
+# Compute probabilities
+y_prob_knn = knn.predict_proba(X_test)[:, 1]
+y_prob_svm = svm.predict_proba(X_test)[:, 1]
+
+# Compute ROC curves
+fpr_knn, tpr_knn, _ = roc_curve(y_test, y_prob_knn)
+fpr_svm, tpr_svm, _ = roc_curve(y_test, y_prob_svm)
+
+auc_knn = roc_auc_score(y_test, y_prob_knn)
+auc_svm = roc_auc_score(y_test, y_prob_svm)
+
+# Plot ROC curves
+plt.figure(figsize=(6,4))
+plt.plot(fpr_knn, tpr_knn, label=f'KNN (AUC={auc_knn:.4f})')
+plt.plot(fpr_svm, tpr_svm, label=f'SVM (AUC={auc_svm:.4f})')
+plt.plot([0,1],[0,1],'r--')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC Curve Comparison (KNN vs SVM)")
+plt.legend()
+plt.show()
+
+
